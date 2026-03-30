@@ -1,132 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Insurance Dashboard</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 0; background-color: #141414; color: #fff; }
-  header { background-color: #1f1f1f; padding: 20px; display: flex; align-items: center; justify-content: space-between; }
-  header h1 { margin: 0; font-size: 24px; }
-  header input { padding: 8px 12px; font-size: 16px; border-radius: 4px; border: none; }
-  .menu { display: flex; padding: 10px; background-color: #1f1f1f; overflow-x: auto; }
-  .menu-item { margin-right: 20px; cursor: pointer; white-space: nowrap; }
-  .menu-item:hover { text-decoration: underline; }
-  .sub-menu { display: flex; flex-wrap: wrap; padding: 20px; gap: 20px; }
-  .video-card { width: 220px; background-color: #1f1f1f; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
-  .video-card:hover { transform: scale(1.05); }
-  .video-card img { width: 100%; display: block; }
-  .video-card h3 { padding: 10px; font-size: 16px; margin: 0; }
-  .player { padding: 20px; }
-  iframe { width: 100%; height: 480px; border: none; }
-  .analytics { padding: 20px; font-size: 14px; color: #ccc; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insurance Video Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      background-color: #121212;
+      color: #fff;
+    }
+    header {
+      background-color: #1f1f1f;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #ff3d00;
+    }
+    header input[type="text"] {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: none;
+      width: 300px;
+      font-size: 16px;
+    }
+    .menu-container {
+      display: flex;
+      background-color: #1a1a1a;
+      padding: 10px 20px;
+      overflow-x: auto;
+    }
+    .menu-container button {
+      background-color: #2a2a2a;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin-right: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .menu-container button:hover, .menu-container button.active {
+      background-color: #ff3d00;
+    }
+    .sub-menu-container {
+      display: flex;
+      flex-wrap: wrap;
+      padding: 20px;
+      gap: 20px;
+    }
+    .video-card {
+      background-color: #1f1f1f;
+      width: 220px;
+      cursor: pointer;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: 0.2s;
+    }
+    .video-card:hover {
+      transform: scale(1.05);
+    }
+    .video-card img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+    }
+    .video-card h3 {
+      margin: 10px;
+      font-size: 16px;
+    }
+    footer {
+      padding: 15px 30px;
+      text-align: center;
+      background-color: #1f1f1f;
+      font-size: 14px;
+      color: #aaa;
+    }
+  </style>
 </head>
 <body>
+  <header>
+    <h1>Insurance Video Dashboard</h1>
+    <input type="text" id="search" placeholder="Search videos...">
+  </header>
 
-<header>
-  <h1>Insurance Dashboard</h1>
-  <input type="text" id="searchInput" placeholder="Search videos...">
-</header>
+  <div class="menu-container" id="mainMenu"></div>
+  <div class="sub-menu-container" id="subMenu"></div>
 
-<div class="menu" id="mainMenu"></div>
+  <footer>© 2026 Insurance Video Dashboard</footer>
 
-<div class="sub-menu" id="subMenu"></div>
+  <script>
+    // Google Sheet JSON URL (publish your sheet to web and use this)
+    const sheetID = 'YOUR_GOOGLE_SHEET_ID_HERE';
+    const sheetName = 'Sheet1';
+    const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
-<div class="player">
-  <iframe id="videoPlayer" src="" allowfullscreen></iframe>
-</div>
+    let sheetData = [];
 
-<div class="analytics" id="analyticsLog">
-  Clicked Videos:
-  <ul id="clickedVideos"></ul>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script>
-  const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqLVmIabusNFfPgAdG82nrVWjqJOzr-bkHqbFxTf5rc_Qw_fxPYIPpSIxbEYvseJ7o-aQJg5hTtO9M/pub?output=csv"; // <-- replace this with your CSV URL
-
-  const mainMenu = document.getElementById('mainMenu');
-  const subMenu = document.getElementById('subMenu');
-  const videoPlayer = document.getElementById('videoPlayer');
-  const clickedVideos = document.getElementById('clickedVideos');
-  const searchInput = document.getElementById('searchInput');
-
-  let sheetData = [];
-  let currentMain = null;
-
-  // Fetch CSV from Google Sheets
-  Papa.parse(sheetCSVUrl, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      sheetData = results.data;
-      initDashboard();
-    }
-  });
-
-  function initDashboard() {
-    // Populate Main Menu
-    const mainItems = [...new Set(sheetData.map(item => item.Main))];
-    mainMenu.innerHTML = '';
-    mainItems.forEach(main => {
-      const div = document.createElement('div');
-      div.className = 'menu-item';
-      div.textContent = main;
-      div.addEventListener('click', () => {
-        currentMain = main;
-        renderSubMenu();
+    // Fetch sheet data
+    async function fetchSheetData() {
+      const res = await fetch(sheetURL);
+      const text = await res.text();
+      const json = JSON.parse(text.substring(47, text.length - 2));
+      sheetData = json.table.rows.map(r => {
+        const obj = {};
+        json.table.cols.forEach((c, i) => {
+          obj[c.label] = r.c[i] ? r.c[i].v : '';
+        });
+        return obj;
       });
-      mainMenu.appendChild(div);
-    });
-  }
+      populateMainMenu();
+    }
 
-  // Render Submenu & Thumbnails
-  function renderSubMenu() {
-    subMenu.innerHTML = '';
-    let filtered = sheetData.filter(item => item.Main === currentMain);
+    // Populate main menu buttons
+    function populateMainMenu() {
+      const mainMenuDiv = document.getElementById('mainMenu');
+      mainMenuDiv.innerHTML = '';
+      const mainMenus = [...new Set(sheetData.map(d => d.Main))];
+      mainMenus.forEach(menu => {
+        const btn = document.createElement('button');
+        btn.textContent = menu;
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.menu-container button').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          populateSubMenu(menu);
+        });
+        mainMenuDiv.appendChild(btn);
+      });
+    }
 
-    // Apply search filter
-    const searchText = searchInput.value.toLowerCase();
-    if (searchText) {
-      filtered = filtered.filter(item =>
-        (item.Sub && item.Sub.toLowerCase().includes(searchText)) ||
-        (item.Subsub && item.Subsub.toLowerCase().includes(searchText))
+    // Populate sub menu / video cards
+    function populateSubMenu(mainMenu) {
+      const subMenuDiv = document.getElementById('subMenu');
+      subMenuDiv.innerHTML = '';
+      const filtered = sheetData.filter(d => d.Main === mainMenu);
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'video-card';
+
+        const img = document.createElement('img');
+        img.src = item['Thumbnail URL'] || "https://via.placeholder.com/220x140?text=No+Image";
+        img.alt = item.Sub || item.Subsub || item.Main;
+
+        const title = document.createElement('h3');
+        title.textContent = item.Sub || item.Subsub || item.Main;
+
+        card.appendChild(img);
+        card.appendChild(title);
+
+        card.addEventListener('click', () => {
+          if (item.Action === 'play' && item['Video URL']) {
+            // Open video in new tab
+            window.open(item['Video URL'], '_blank');
+            logClick(title.textContent);
+          } else {
+            alert("No video URL provided for this item.");
+          }
+        });
+
+        subMenuDiv.appendChild(card);
+      });
+    }
+
+    // Search bar functionality
+    document.getElementById('search').addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      const mainMenuDiv = document.getElementById('mainMenu');
+      const subMenuDiv = document.getElementById('subMenu');
+      subMenuDiv.innerHTML = '';
+      const filtered = sheetData.filter(item =>
+        (item.Main && item.Main.toLowerCase().includes(query)) ||
+        (item.Sub && item.Sub.toLowerCase().includes(query)) ||
+        (item.Subsub && item.Subsub.toLowerCase().includes(query))
       );
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'video-card';
+        const img = document.createElement('img');
+        img.src = item['Thumbnail URL'] || "https://via.placeholder.com/220x140?text=No+Image";
+        const title = document.createElement('h3');
+        title.textContent = item.Sub || item.Subsub || item.Main;
+        card.appendChild(img);
+        card.appendChild(title);
+        card.addEventListener('click', () => {
+          if (item.Action === 'play' && item['Video URL']) {
+            window.open(item['Video URL'], '_blank');
+            logClick(title.textContent);
+          } else {
+            alert("No video URL provided for this item.");
+          }
+        });
+        subMenuDiv.appendChild(card);
+      });
+    });
+
+    // Analytics logging (just logs in console for now)
+    function logClick(videoName) {
+      console.log("Video clicked:", videoName);
     }
 
-    filtered.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'video-card';
-      const img = document.createElement('img');
-      img.src = item['Thumbnail URL'] || "https://via.placeholder.com/220x140?text=No+Image";
-      img.alt = item.Sub || item.Subsub || item.Main;
-      const title = document.createElement('h3');
-      title.textContent = item.Sub || item.Subsub || item.Main;
-      card.appendChild(img);
-      card.appendChild(title);
-
-      card.addEventListener('click', () => {
-        if (item.Action === 'play') {
-          videoPlayer.src = item['Video URL'];
-          logClick(title.textContent);
-        }
-      });
-
-      subMenu.appendChild(card);
-    });
-  }
-
-  // Search functionality
-  searchInput.addEventListener('input', renderSubMenu);
-
-  // Analytics logging
-  function logClick(videoTitle) {
-    const li = document.createElement('li');
-    li.textContent = videoTitle + ' - ' + new Date().toLocaleString();
-    clickedVideos.appendChild(li);
-  }
-</script>
+    // Initialize
+    fetchSheetData();
+  </script>
 </body>
 </html>
