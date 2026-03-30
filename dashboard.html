@@ -1,222 +1,132 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Dashboard</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insurance Dashboard</title>
 <style>
-body {
-  margin:0;
-  font-family: Arial;
-  background:#141414;
-  color:white;
-}
-
-/* Sidebar */
-.sidebar {
-  width:220px;
-  height:100vh;
-  background:#000;
-  position:fixed;
-  padding:20px;
-}
-
-.menu-item {
-  padding:10px;
-  cursor:pointer;
-}
-
-.menu-item:hover {
-  background:#333;
-}
-
-/* Content */
-.content {
-  margin-left:240px;
-  padding:20px;
-}
-
-/* Search */
-.search {
-  padding:10px;
-  width:300px;
-  margin-bottom:20px;
-  border-radius:5px;
-  border:none;
-}
-
-/* Cards */
-.card {
-  width:220px;
-  background:#222;
-  margin:10px;
-  display:inline-block;
-  border-radius:10px;
-  overflow:hidden;
-  cursor:pointer;
-}
-
-.card img {
-  width:100%;
-  height:120px;
-  object-fit:cover;
-}
-
-.card-title {
-  padding:10px;
-}
-
-.card:hover {
-  transform:scale(1.05);
-  background:red;
-}
-
-/* Analytics */
-.analytics {
-  position:fixed;
-  bottom:10px;
-  right:10px;
-  background:#000;
-  padding:10px;
-  border-radius:8px;
-  font-size:12px;
-}
+  body { font-family: Arial, sans-serif; margin: 0; background-color: #141414; color: #fff; }
+  header { background-color: #1f1f1f; padding: 20px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { margin: 0; font-size: 24px; }
+  header input { padding: 8px 12px; font-size: 16px; border-radius: 4px; border: none; }
+  .menu { display: flex; padding: 10px; background-color: #1f1f1f; overflow-x: auto; }
+  .menu-item { margin-right: 20px; cursor: pointer; white-space: nowrap; }
+  .menu-item:hover { text-decoration: underline; }
+  .sub-menu { display: flex; flex-wrap: wrap; padding: 20px; gap: 20px; }
+  .video-card { width: 220px; background-color: #1f1f1f; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+  .video-card:hover { transform: scale(1.05); }
+  .video-card img { width: 100%; display: block; }
+  .video-card h3 { padding: 10px; font-size: 16px; margin: 0; }
+  .player { padding: 20px; }
+  iframe { width: 100%; height: 480px; border: none; }
+  .analytics { padding: 20px; font-size: 14px; color: #ccc; }
 </style>
-
 </head>
-
 <body>
 
-<div class="sidebar">
-  <h3>🎬 Dashboard</h3>
-  <div id="menu"></div>
+<header>
+  <h1>Insurance Dashboard</h1>
+  <input type="text" id="searchInput" placeholder="Search videos...">
+</header>
+
+<div class="menu" id="mainMenu"></div>
+
+<div class="sub-menu" id="subMenu"></div>
+
+<div class="player">
+  <iframe id="videoPlayer" src="" allowfullscreen></iframe>
 </div>
 
-<div class="content">
-
-  <input class="search" placeholder="Search..." onkeyup="searchVideos(this.value)">
-
-  <div id="cards"></div>
-
+<div class="analytics" id="analyticsLog">
+  Clicked Videos:
+  <ul id="clickedVideos"></ul>
 </div>
 
-<div class="analytics" id="analytics"></div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script>
+  const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTqLVmIabusNFfPgAdG82nrVWjqJOzr-bkHqbFxTf5rc_Qw_fxPYIPpSIxbEYvseJ7o-aQJg5hTtO9M/pub?output=csv"; // <-- replace this with your CSV URL
 
-// 🔐 Check login
-if(!localStorage.getItem("loggedIn")){
-  window.location="index.html";
-}
+  const mainMenu = document.getElementById('mainMenu');
+  const subMenu = document.getElementById('subMenu');
+  const videoPlayer = document.getElementById('videoPlayer');
+  const clickedVideos = document.getElementById('clickedVideos');
+  const searchInput = document.getElementById('searchInput');
 
-// 🔴 Google Sheet CSV
-const sheetURL = "PASTE_YOUR_CSV_LINK_HERE";
+  let sheetData = [];
+  let currentMain = null;
 
-let data = [];
-let filtered = [];
+  // Fetch CSV from Google Sheets
+  Papa.parse(sheetCSVUrl, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      sheetData = results.data;
+      initDashboard();
+    }
+  });
 
-// Fetch data
-fetch(sheetURL)
-.then(res => res.text())
-.then(text => {
-  const rows = text.split("\n").slice(1);
-
-  rows.forEach(r => {
-    const c = r.split(",");
-    data.push({
-      main:c[0],
-      sub:c[1],
-      subsub:c[2],
-      url:c[4],
-      thumb:c[5]
+  function initDashboard() {
+    // Populate Main Menu
+    const mainItems = [...new Set(sheetData.map(item => item.Main))];
+    mainMenu.innerHTML = '';
+    mainItems.forEach(main => {
+      const div = document.createElement('div');
+      div.className = 'menu-item';
+      div.textContent = main;
+      div.addEventListener('click', () => {
+        currentMain = main;
+        renderSubMenu();
+      });
+      mainMenu.appendChild(div);
     });
-  });
+  }
 
-  filtered = data;
-  loadMenu();
-  showCards(filtered);
-});
+  // Render Submenu & Thumbnails
+  function renderSubMenu() {
+    subMenu.innerHTML = '';
+    let filtered = sheetData.filter(item => item.Main === currentMain);
 
-// Sidebar menu
-function loadMenu(){
-  const mains = [...new Set(data.map(d => d.main))];
-  const menu = document.getElementById("menu");
+    // Apply search filter
+    const searchText = searchInput.value.toLowerCase();
+    if (searchText) {
+      filtered = filtered.filter(item =>
+        (item.Sub && item.Sub.toLowerCase().includes(searchText)) ||
+        (item.Subsub && item.Subsub.toLowerCase().includes(searchText))
+      );
+    }
 
-  mains.forEach(m=>{
-    const div = document.createElement("div");
-    div.className="menu-item";
-    div.innerText=m;
+    filtered.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'video-card';
+      const img = document.createElement('img');
+      img.src = item['Thumbnail URL'] || "https://via.placeholder.com/220x140?text=No+Image";
+      img.alt = item.Sub || item.Subsub || item.Main;
+      const title = document.createElement('h3');
+      title.textContent = item.Sub || item.Subsub || item.Main;
+      card.appendChild(img);
+      card.appendChild(title);
 
-    div.onclick=()=>{
-      filtered = data.filter(d=>d.main===m);
-      showCards(filtered);
-    };
+      card.addEventListener('click', () => {
+        if (item.Action === 'play') {
+          videoPlayer.src = item['Video URL'];
+          logClick(title.textContent);
+        }
+      });
 
-    menu.appendChild(div);
-  });
-}
-
-// Show cards
-function showCards(list){
-  const cards = document.getElementById("cards");
-  cards.innerHTML="";
-
-  list.forEach(v=>{
-    const div = document.createElement("div");
-    div.className="card";
-
-    div.innerHTML = `
-      <img src="${v.thumb || 'https://via.placeholder.com/300'}">
-      <div class="card-title">
-        <b>${v.sub}</b><br>${v.subsub}
-      </div>
-    `;
-
-    div.onclick=()=>{
-      trackClick(v.sub);
-      window.open(v.url,"_blank");
-    };
-
-    cards.appendChild(div);
-  });
-
-  updateAnalytics();
-}
-
-// Search
-function searchVideos(text){
-  text = text.toLowerCase();
-
-  const result = data.filter(v =>
-    v.main.toLowerCase().includes(text) ||
-    v.sub.toLowerCase().includes(text) ||
-    v.subsub.toLowerCase().includes(text)
-  );
-
-  showCards(result);
-}
-
-// Analytics
-function trackClick(name){
-  let stats = JSON.parse(localStorage.getItem("stats")||"{}");
-  stats[name] = (stats[name]||0)+1;
-  localStorage.setItem("stats", JSON.stringify(stats));
-}
-
-function updateAnalytics(){
-  const stats = JSON.parse(localStorage.getItem("stats")||"{}");
-  let html = "<b>Top Clicks</b><br>";
-
-  Object.entries(stats)
-    .sort((a,b)=>b[1]-a[1])
-    .slice(0,5)
-    .forEach(([k,v])=>{
-      html += `${k}: ${v}<br>`;
+      subMenu.appendChild(card);
     });
+  }
 
-  document.getElementById("analytics").innerHTML = html;
-}
+  // Search functionality
+  searchInput.addEventListener('input', renderSubMenu);
 
+  // Analytics logging
+  function logClick(videoTitle) {
+    const li = document.createElement('li');
+    li.textContent = videoTitle + ' - ' + new Date().toLocaleString();
+    clickedVideos.appendChild(li);
+  }
 </script>
-
 </body>
 </html>
