@@ -1,64 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Login</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insurance Dashboard</title>
 <style>
-body {
-  margin:0;
-  font-family: Arial;
-  background:#141414;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
-
-.login-box {
-  background:#222;
-  padding:30px;
-  border-radius:10px;
-  width:300px;
-  color:white;
-  text-align:center;
-}
-
-input {
-  width:100%;
-  padding:10px;
-  margin:10px 0;
-  border:none;
-  border-radius:5px;
-}
-
-button {
-  width:100%;
-  padding:10px;
-  background:red;
-  color:white;
-  border:none;
-  cursor:pointer;
-}
+    body { font-family: Arial, sans-serif; background-color: #111; color: #fff; margin:0; padding:0;}
+    header { background-color: #222; padding: 1rem; display:flex; justify-content: space-between; align-items:center;}
+    header h1 { margin:0; color:#f5c518; }
+    header input[type="search"] { padding:0.5rem; border-radius:5px; border:none; width:200px; }
+    .menu { display:flex; background:#333; padding:0.5rem;}
+    .menu-item { margin-right:1rem; cursor:pointer; }
+    .submenu, .subsub { margin-left:1rem; display:none; cursor:pointer; }
+    .thumbnail-container { display:flex; flex-wrap:wrap; margin:1rem; gap:1rem;}
+    .thumb { width:200px; cursor:pointer; }
+    .thumb img { width:100%; border-radius:5px; }
+    .thumb p { text-align:center; margin:0.5rem 0 0 0; font-size:0.9rem; }
 </style>
 </head>
-
 <body>
 
-<div class="login-box">
-  <h2>Dashboard Login</h2>
-  <input id="user" placeholder="Username">
-  <input id="pass" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
-</div>
+<header>
+    <h1>Insurance Dashboard</h1>
+    <input type="search" id="search" placeholder="Search...">
+</header>
+
+<div class="menu" id="menu"></div>
+
+<div class="thumbnail-container" id="thumbnails"></div>
 
 <script>
-function login(){
-  if(user.value==="admin" && pass.value==="1234"){
-    localStorage.setItem("loggedIn","true");
-    window.location="dashboard.html";
-  } else {
-    alert("Invalid login");
-  }
+const SHEET_CSV_URL = "YOUR_PUBLISHED_CSV_URL_HERE"; // replace with your CSV published URL
+let sheetData = [];
+
+async function fetchSheetData() {
+    try {
+        const response = await fetch(SHEET_CSV_URL);
+        const csvText = await response.text();
+        const rows = csvText.split("\n").filter(r=>r.trim()!="");
+        const headers = rows[0].split(",");
+        sheetData = rows.slice(1).map(row=>{
+            const cols = row.split(",");
+            return {
+                main: cols[0].trim(),
+                sub: cols[1].trim(),
+                subsub: cols[2].trim(),
+                action: cols[3].trim(),
+                video: cols[4].trim(),
+                thumbnail: cols[5].trim()
+            };
+        });
+        renderMenu();
+        renderThumbnails(sheetData);
+    } catch(err){
+        console.error("Error fetching CSV:", err);
+    }
 }
+
+function renderMenu() {
+    const menuDiv = document.getElementById("menu");
+    const mains = [...new Set(sheetData.map(d=>d.main))];
+    mains.forEach(main=>{
+        const mainEl = document.createElement("div");
+        mainEl.className = "menu-item";
+        mainEl.textContent = main;
+        mainEl.onclick = () => {
+            // filter thumbnails for main menu
+            const filtered = sheetData.filter(d=>d.main===main);
+            renderThumbnails(filtered);
+        }
+        menuDiv.appendChild(mainEl);
+    });
+}
+
+function renderThumbnails(data){
+    const container = document.getElementById("thumbnails");
+    container.innerHTML = "";
+    data.forEach(item=>{
+        const thumbDiv = document.createElement("div");
+        thumbDiv.className = "thumb";
+        thumbDiv.innerHTML = `
+            <img src="${item.thumbnail}" alt="${item.main}">
+            <p>${item.main}${item.sub? " > "+item.sub : ""}${item.subsub? " > "+item.subsub : ""}</p>
+        `;
+        thumbDiv.onclick = ()=>{
+            if(item.video) window.open(item.video, "_blank");
+            else alert("Video URL not available");
+        };
+        container.appendChild(thumbDiv);
+    });
+}
+
+// search functionality
+document.getElementById("search").addEventListener("input", e=>{
+    const q = e.target.value.toLowerCase();
+    const filtered = sheetData.filter(d=>
+        d.main.toLowerCase().includes(q) ||
+        d.sub.toLowerCase().includes(q) ||
+        d.subsub.toLowerCase().includes(q)
+    );
+    renderThumbnails(filtered);
+});
+
+fetchSheetData();
 </script>
 
 </body>
