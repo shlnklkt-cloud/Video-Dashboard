@@ -1,216 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Insurance Video Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insurance Dashboard</title>
+<style>
     body {
-      font-family: 'Roboto', sans-serif;
-      margin: 0;
-      background-color: #121212;
-      color: #fff;
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #121212;
+        color: #fff;
     }
+
     header {
-      background-color: #1f1f1f;
-      padding: 15px 30px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+        background-color: #1f1f1f;
+        padding: 15px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
+
     header h1 {
-      margin: 0;
-      font-size: 22px;
-      color: #ff3d00;
+        margin: 0;
+        font-size: 1.8rem;
+        color: #e50914;
     }
-    header input[type="text"] {
-      padding: 8px 12px;
-      border-radius: 4px;
-      border: none;
-      width: 300px;
-      font-size: 16px;
+
+    #searchBar {
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: none;
+        width: 250px;
     }
-    .menu-container {
-      display: flex;
-      background-color: #1a1a1a;
-      padding: 10px 20px;
-      overflow-x: auto;
+
+    .menu {
+        display: flex;
+        flex-direction: column;
+        margin: 20px;
     }
-    .menu-container button {
-      background-color: #2a2a2a;
-      color: #fff;
-      border: none;
-      padding: 10px 20px;
-      margin-right: 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: 0.2s;
+
+    .main-menu {
+        font-size: 1.2rem;
+        margin: 10px 0;
+        cursor: pointer;
+        background-color: #1f1f1f;
+        padding: 10px;
+        border-radius: 4px;
+        transition: 0.2s;
     }
-    .menu-container button:hover, .menu-container button.active {
-      background-color: #ff3d00;
+
+    .main-menu:hover {
+        background-color: #2a2a2a;
     }
-    .sub-menu-container {
-      display: flex;
-      flex-wrap: wrap;
-      padding: 20px;
-      gap: 20px;
+
+    .sub-menu, .subsub-menu {
+        margin-left: 20px;
+        cursor: pointer;
+        display: none;
     }
-    .video-card {
-      background-color: #1f1f1f;
-      width: 220px;
-      cursor: pointer;
-      border-radius: 8px;
-      overflow: hidden;
-      transition: 0.2s;
+
+    .menu-item {
+        margin: 5px 0;
+        padding: 8px;
+        background-color: #222;
+        border-radius: 4px;
+        transition: 0.2s;
     }
-    .video-card:hover {
-      transform: scale(1.05);
+
+    .menu-item:hover {
+        background-color: #333;
     }
-    .video-card img {
-      width: 100%;
-      height: 140px;
-      object-fit: cover;
+
+    .thumbnails {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 20px;
     }
-    .video-card h3 {
-      margin: 10px;
-      font-size: 16px;
+
+    .thumbnail-card {
+        width: 200px;
+        cursor: pointer;
+        background-color: #1f1f1f;
+        border-radius: 6px;
+        overflow: hidden;
+        transition: transform 0.2s;
     }
-    footer {
-      padding: 15px 30px;
-      text-align: center;
-      background-color: #1f1f1f;
-      font-size: 14px;
-      color: #aaa;
+
+    .thumbnail-card:hover {
+        transform: scale(1.05);
     }
-  </style>
+
+    .thumbnail-card img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+    }
+
+    .thumbnail-card div {
+        padding: 5px;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Insurance Video Dashboard</h1>
-    <input type="text" id="search" placeholder="Search videos...">
-  </header>
 
-  <div class="menu-container" id="mainMenu"></div>
-  <div class="sub-menu-container" id="subMenu"></div>
+<header>
+    <h1>Insurance Dashboard</h1>
+    <input type="text" id="searchBar" placeholder="Search...">
+</header>
 
-  <footer>© 2026 Insurance Video Dashboard</footer>
+<div class="menu" id="menuContainer"></div>
 
-  <script>
-    // Google Sheet JSON URL (publish your sheet to web and use this)
-    const sheetID = '2PACX-1vTqLVmIabusNFfPgAdG82nrVWjqJOzr-bkHqbFxTf5rc_Qw_fxPYIPpSIxbEYvseJ7o-aQJg5hTtO9M';
-    const sheetName = 'Sheet1';
-    const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+<div class="thumbnails" id="thumbnailsContainer"></div>
 
-    let sheetData = [];
+<script>
+const SHEET_ID = "1EKvbj2hQZI9L6LNNCFUBaeDcwat0PgFy8nN5zQ4xH7o";
+const SHEET_JSON_URL = `https://spreadsheets.google.com/feeds/list/${SHEET_ID}/od6/public/values?alt=json`;
 
-    // Fetch sheet data
-    async function fetchSheetData() {
-      const res = await fetch(sheetURL);
-      const text = await res.text();
-      const json = JSON.parse(text.substring(47, text.length - 2));
-      sheetData = json.table.rows.map(r => {
-        const obj = {};
-        json.table.cols.forEach((c, i) => {
-          obj[c.label] = r.c[i] ? r.c[i].v : '';
-        });
-        return obj;
-      });
-      populateMainMenu();
+let sheetData = [];
+
+async function fetchSheetData() {
+    try {
+        const response = await fetch(SHEET_JSON_URL);
+        const data = await response.json();
+        sheetData = data.feed.entry.map(entry => ({
+            main: entry.gsx$main.$t,
+            sub: entry.gsx$sub.$t,
+            subsub: entry.gsx$subsub.$t,
+            action: entry.gsx$action.$t,
+            video: entry.gsx$videourl.$t,
+            thumbnail: entry.gsx$thumbnailurl.$t
+        }));
+        renderMenu();
+        renderThumbnails(sheetData);
+    } catch (error) {
+        console.error("Error fetching Google Sheet:", error);
     }
+}
 
-    // Populate main menu buttons
-    function populateMainMenu() {
-      const mainMenuDiv = document.getElementById('mainMenu');
-      mainMenuDiv.innerHTML = '';
-      const mainMenus = [...new Set(sheetData.map(d => d.Main))];
-      mainMenus.forEach(menu => {
-        const btn = document.createElement('button');
-        btn.textContent = menu;
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.menu-container button').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          populateSubMenu(menu);
+function renderMenu() {
+    const menuContainer = document.getElementById("menuContainer");
+    menuContainer.innerHTML = "";
+
+    const mains = [...new Set(sheetData.map(item => item.main))];
+
+    mains.forEach(mainItem => {
+        const mainDiv = document.createElement("div");
+        mainDiv.className = "main-menu";
+        mainDiv.textContent = mainItem;
+
+        mainDiv.addEventListener("click", () => {
+            const subs = sheetData.filter(item => item.main === mainItem && item.sub);
+            mainDiv.querySelectorAll(".sub-menu").forEach(el => el.remove());
+            subs.forEach(subItem => {
+                const subDiv = document.createElement("div");
+                subDiv.className = "sub-menu menu-item";
+                subDiv.textContent = subItem.sub;
+
+                subDiv.addEventListener("click", () => {
+                    const subsubs = sheetData.filter(item => item.main === mainItem && item.sub === subItem.sub && item.subsub);
+                    subDiv.querySelectorAll(".subsub-menu").forEach(el => el.remove());
+
+                    subsubs.forEach(subsubItem => {
+                        const subsubDiv = document.createElement("div");
+                        subsubDiv.className = "subsub-menu menu-item";
+                        subsubDiv.textContent = subsubItem.subsub;
+
+                        subsubDiv.addEventListener("click", () => {
+                            openVideo(subsubItem.video);
+                        });
+
+                        subDiv.appendChild(subsubDiv);
+                    });
+
+                    // If no subsub, open video directly
+                    if (subsubs.length === 0) {
+                        openVideo(subItem.video);
+                    }
+
+                });
+
+                mainDiv.appendChild(subDiv);
+            });
+
+            // If no sub, open video directly
+            const directItems = sheetData.filter(item => item.main === mainItem && !item.sub);
+            if (directItems.length > 0) {
+                directItems.forEach(item => openVideo(item.video));
+            }
+
         });
-        mainMenuDiv.appendChild(btn);
-      });
-    }
 
-    // Populate sub menu / video cards
-    function populateSubMenu(mainMenu) {
-      const subMenuDiv = document.getElementById('subMenu');
-      subMenuDiv.innerHTML = '';
-      const filtered = sheetData.filter(d => d.Main === mainMenu);
-      filtered.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'video-card';
-
-        const img = document.createElement('img');
-        img.src = item['Thumbnail URL'] || "https://via.placeholder.com/220x140?text=No+Image";
-        img.alt = item.Sub || item.Subsub || item.Main;
-
-        const title = document.createElement('h3');
-        title.textContent = item.Sub || item.Subsub || item.Main;
-
-        card.appendChild(img);
-        card.appendChild(title);
-
-        card.addEventListener('click', () => {
-          if (item.Action === 'play' && item['Video URL']) {
-            // Open video in new tab
-            window.open(item['Video URL'], '_blank');
-            logClick(title.textContent);
-          } else {
-            alert("No video URL provided for this item.");
-          }
-        });
-
-        subMenuDiv.appendChild(card);
-      });
-    }
-
-    // Search bar functionality
-    document.getElementById('search').addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
-      const mainMenuDiv = document.getElementById('mainMenu');
-      const subMenuDiv = document.getElementById('subMenu');
-      subMenuDiv.innerHTML = '';
-      const filtered = sheetData.filter(item =>
-        (item.Main && item.Main.toLowerCase().includes(query)) ||
-        (item.Sub && item.Sub.toLowerCase().includes(query)) ||
-        (item.Subsub && item.Subsub.toLowerCase().includes(query))
-      );
-      filtered.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'video-card';
-        const img = document.createElement('img');
-        img.src = item['Thumbnail URL'] || "https://via.placeholder.com/220x140?text=No+Image";
-        const title = document.createElement('h3');
-        title.textContent = item.Sub || item.Subsub || item.Main;
-        card.appendChild(img);
-        card.appendChild(title);
-        card.addEventListener('click', () => {
-          if (item.Action === 'play' && item['Video URL']) {
-            window.open(item['Video URL'], '_blank');
-            logClick(title.textContent);
-          } else {
-            alert("No video URL provided for this item.");
-          }
-        });
-        subMenuDiv.appendChild(card);
-      });
+        menuContainer.appendChild(mainDiv);
     });
+}
 
-    // Analytics logging (just logs in console for now)
-    function logClick(videoName) {
-      console.log("Video clicked:", videoName);
+function renderThumbnails(data) {
+    const container = document.getElementById("thumbnailsContainer");
+    container.innerHTML = "";
+
+    data.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "thumbnail-card";
+
+        const img = document.createElement("img");
+        img.src = item.thumbnail || "https://via.placeholder.com/200x120?text=No+Image";
+        img.alt = item.main;
+
+        const caption = document.createElement("div");
+        caption.textContent = item.main;
+
+        card.appendChild(img);
+        card.appendChild(caption);
+
+        card.addEventListener("click", () => openVideo(item.video));
+
+        container.appendChild(card);
+    });
+}
+
+function openVideo(url) {
+    if (!url) {
+        alert("No video URL provided.");
+        return;
     }
+    console.log("Video clicked:", url); // Simple analytics
+    window.open(url, "_blank");
+}
 
-    // Initialize
-    fetchSheetData();
-  </script>
+// Search bar functionality
+document.getElementById("searchBar").addEventListener("input", (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = sheetData.filter(item =>
+        (item.main && item.main.toLowerCase().includes(term)) ||
+        (item.sub && item.sub.toLowerCase().includes(term)) ||
+        (item.subsub && item.subsub.toLowerCase().includes(term))
+    );
+    renderThumbnails(filtered);
+});
+
+// Fetch the sheet data on load
+fetchSheetData();
+</script>
+
 </body>
 </html>
